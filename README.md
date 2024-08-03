@@ -1,2 +1,5 @@
 # localGPT
-A local chatbot using JAN and GPT4All Projects
+A local chatbot using Langchain and GPT4All libraries
+
+# How to run
+` streamlit run src/app.py `
