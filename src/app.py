@@ -17,14 +17,11 @@ def initiate_llm(model_path):
   )
   return llm
 
-def get_response(llm, user_query, chat_history):
-    prompt = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
-    chain = prompt | llm | StrOutputParser()
-
-    return chain.stream({
-        "chat_history": chat_history,
-        "user_question": user_query,
-    })
+def render_side_bar():
+  with st.sidebar:
+    st.info("This application allows you to use LLMs for a range of tasks. Please choose your usecase.")
+    task_type = st.radio("Choose your task:", ["Base", "Creative", "Summarization", "Few Shot"])
+    return task_type
 
 def initiate_session_state():
   if "chat_history" not in st.session_state:
@@ -41,8 +38,27 @@ def show_previous_chats():
       with st.chat_message("Human"):
         st.write(message.content)
 
-def chat_with_user(llm):
-  user_query = st.chat_input("Type your message here...")
+def render_prompt(task_type):
+    st.info(TYPE_INFO_TEXT[task_type])
+    examples = None
+    if task_type == "Few Shot": 
+        examples = st.text_area("Plug in your examples!")
+    user_query = st.chat_input("Type your message here...")
+    return user_query, examples
+
+def get_response(llm, user_query, examples, task_type, chat_history):
+    template = TYPE_PROMPT_TEMPELATES[task_type]
+    prompt = ChatPromptTemplate.from_template(template)
+    chain = prompt | llm | StrOutputParser()
+
+    return chain.stream({
+        "chat_history": chat_history,
+        "user_question": user_query,
+        "examples": examples,
+    })
+
+def chat_with_user(llm, task_type):
+  user_query, examples = render_prompt(task_type)
   if user_query is not None and user_query != "":
     st.session_state.chat_history.append(HumanMessage(content=user_query))
 
@@ -50,7 +66,7 @@ def chat_with_user(llm):
       st.markdown(user_query)
 
     with st.chat_message("AI"):
-      response = st.write_stream(get_response(llm, user_query, st.session_state.chat_history))
+      response = st.write_stream(get_response(llm, user_query, examples, task_type, st.session_state.chat_history))
 
     st.session_state.chat_history.append(AIMessage(content=response))
 
@@ -58,9 +74,10 @@ def run():
   st.set_page_config(page_title="Local Chatbot", page_icon="🤖")
   st.title("LocalGPT 💬")
   llm = initiate_llm(MODEL_PATH)
+  task_type = render_side_bar()
   initiate_session_state()
   show_previous_chats()
-  chat_with_user(llm)
+  chat_with_user(llm, task_type)
 
 if __name__ == "__main__":
   run()
