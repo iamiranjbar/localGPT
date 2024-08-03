@@ -1,5 +1,4 @@
 import streamlit as st
-# from langchain_community.llms import GPT4All
 from langchain_community.llms import LlamaCpp
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
@@ -7,7 +6,6 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 MODEL_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/mistral-7b-openorca.gguf"
-# llm = GPT4All(model=MODEL_PATH)
 n_gpu_layers = 1  # Metal set to 1 is enough.
 n_batch = 256  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
 
