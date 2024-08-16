@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 from langchain_community.llms import LlamaCpp
 from langchain_core.messages import AIMessage, HumanMessage
@@ -21,7 +22,12 @@ def render_side_bar():
   with st.sidebar:
     st.info("This application allows you to use LLMs for a range of tasks. Please choose your usecase.")
     task_type = st.radio("Choose your task:", ["Base", "Creative", "Summarization", "Few Shot"])
-    return task_type
+    models =  list(os.listdir(MODELS_PATH))
+    models = [model for model in models if model!=".DS_Store"]
+    chosen_model = st.radio("Choose your model:", models)
+    model_path = f"{MODELS_PATH}{chosen_model}"
+    llm = initiate_llm(model_path)
+    return task_type, llm
 
 def initiate_session_state():
   if "chat_history" not in st.session_state:
@@ -73,8 +79,7 @@ def chat_with_user(llm, task_type):
 def run():
   st.set_page_config(page_title="Local Chatbot", page_icon="🤖")
   st.title("LocalGPT 💬")
-  llm = initiate_llm(MODEL_PATH)
-  task_type = render_side_bar()
+  task_type, llm = render_side_bar()
   initiate_session_state()
   show_previous_chats()
   chat_with_user(llm, task_type)
