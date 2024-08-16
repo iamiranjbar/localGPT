@@ -18,6 +18,19 @@ def initiate_llm(model_path):
   )
   return llm
 
+def render_model_uploader(existing_models):
+  model_file = st.file_uploader("Choose your model file:")
+  if model_file is not None and model_file.name not in existing_models:
+    # To read file as bytes:
+    bytes_data = model_file.getvalue()
+    model_file_path = f"{MODELS_PATH}{model_file.name}"
+    with open(model_file_path, "wb") as write_file:
+      # Write bytes to file
+      write_file.write(bytes_data)
+      print("File upload has been done.")
+      # Refresh page after upload is done
+      st.experimental_rerun()
+
 def render_side_bar():
   with st.sidebar:
     st.info("This application allows you to use LLMs for a range of tasks. Please choose your usecase.")
@@ -27,6 +40,7 @@ def render_side_bar():
     chosen_model = st.radio("Choose your model:", models)
     model_path = f"{MODELS_PATH}{chosen_model}"
     llm = initiate_llm(model_path)
+    render_model_uploader(models)
     return task_type, llm
 
 def initiate_session_state():
