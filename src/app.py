@@ -66,11 +66,14 @@ def render_prompt(task_type):
     user_query = st.chat_input("Type your message here...")
     return user_query, examples
 
-def get_response(llm, user_query, examples, task_type, chat_history):
+def get_chain(llm, task_type):
     template = TYPE_PROMPT_TEMPELATES[task_type]
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | llm | StrOutputParser()
+    return chain
 
+def get_response(llm, task_type, user_query, examples, chat_history):
+    chain = get_chain(llm, task_type)
     return chain.stream({
         "chat_history": chat_history,
         "user_question": user_query,
@@ -86,7 +89,7 @@ def chat_with_user(llm, task_type):
       st.markdown(user_query)
 
     with st.chat_message("AI"):
-      response = st.write_stream(get_response(llm, user_query, examples, task_type, st.session_state.chat_history))
+      response = st.write_stream(get_response(llm, task_type, user_query, examples, st.session_state.chat_history))
 
     st.session_state.chat_history.append(AIMessage(content=response))
 
