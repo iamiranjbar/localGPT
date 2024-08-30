@@ -1,4 +1,7 @@
-MODELS_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/"
+# For local
+# MODELS_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/"
+# For Docker
+MODELS_PATH = "/app/models/"
 n_gpu_layers = 1  # Metal set to 1 is enough.
 n_batch = 256  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
 
