@@ -1,9 +1,12 @@
 # For local
-# MODELS_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/"
+MODELS_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/"
 # For Docker
-MODELS_PATH = "/app/models/"
-n_gpu_layers = 1  # Metal set to 1 is enough.
-n_batch = 256  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
+# MODELS_PATH = "/app/models/"
+
+N_GPU_LAYERS = 1  # Metal set to 1 is enough.
+N_BATCH = 256  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
+PERSIST_DIRECTORY = "./db"
+MAX_ACCEPTABLE_RELEVANCE_SCORE = 1.2
 
 TYPE_INFO_TEXT = {
     "Base": "Use this type to perform standard chat generation tasks.",
