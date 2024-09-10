@@ -32,7 +32,7 @@ class LocalEmbeddings(Embeddings):
         return embedding[0].tolist()
         
 def create_or_load_db():
-    embeddings = LocalEmbeddings(model_name="./local_sbert_model")
+    embeddings = LocalEmbeddings(model_name=TOKENIZER_PATH)
 
     if not os.path.exists(PERSIST_DIRECTORY):
         os.mkdir(PERSIST_DIRECTORY)

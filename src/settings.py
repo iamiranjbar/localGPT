@@ -1,7 +1,12 @@
-# For local
+# Models Path
+## For local
 MODELS_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/"
-# For Docker
+## For Docker
 # MODELS_PATH = "/app/models/"
+
+# Tokenizer Path
+## For local
+TOKENIZER_PATH = "../tokenizers/local_sbert_model"
 
 N_GPU_LAYERS = 1  # Metal set to 1 is enough.
 N_BATCH = 256  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
