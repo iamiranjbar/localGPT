@@ -10,7 +10,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain.chains import question_answering
+from langchain_core.runnables import RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from settings import *
@@ -32,7 +32,6 @@ class LocalEmbeddings(Embeddings):
         return embedding[0].tolist()
         
 def create_or_load_db():
-
     embeddings = LocalEmbeddings(model_name="./local_sbert_model")
 
     if not os.path.exists(PERSIST_DIRECTORY):
@@ -142,7 +141,6 @@ def get_chain(llm, task_type):
 def find_relative_docs(db, question):
     print("============DB Search Logs=============")
     start = time.time_ns()
-    print(db)
     results = db.similarity_search_with_score(question, k=1)
     end = time.time_ns()
     print(f"Similarity Search Time: {(end - start)/1000000000}s")
@@ -159,11 +157,22 @@ def get_response_from_llm(llm, task_type, user_query, examples, chat_history):
         "examples": examples,
     })
 
-def ask_question_from_document(llm, question, docs):
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+def ask_question_from_document(llm, question, db, chat_history):
     print("============LLM Response Logs=============")
     start = time.time_ns()
-    chain = question_answering.load_qa_chain(llm=llm, chain_type="stuff")
-    response = chain.run(input_documents=docs, question=question)
+
+    retriever=db.as_retriever()
+    prompt = ChatPromptTemplate.from_template(RAG_PROMPT_TEMPLATE)
+    rag_chain = (
+        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+    response = rag_chain.stream({"question": question, "chat_history": chat_history})
     end = time.time_ns()
     print(f"LLM Response Time: {(end - start)/1000000000}s")
     print("========================================")
@@ -177,15 +186,14 @@ def chat_with_user(llm, task_type, db):
     with st.chat_message("Human"):
       st.markdown(user_query)
 
-    docs, scores = find_relative_docs(db, user_query)
+    _, scores = find_relative_docs(db, user_query)
     if scores:
         first_doc_score = scores[0]
     else: first_doc_score = math.inf
     with st.chat_message("AI"):
       if first_doc_score < MAX_ACCEPTABLE_RELEVANCE_SCORE:
         print("Answer from localdocs")
-        response = ask_question_from_document(llm, user_query, docs)
-        st.write(response)
+        response = st.write_stream(ask_question_from_document(llm, user_query, db, st.session_state.chat_history))
       else:
         print("Answer from llm")
         response = st.write_stream(get_response_from_llm(llm, task_type, user_query, examples, st.session_state.chat_history))
