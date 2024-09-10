@@ -3,7 +3,6 @@ import time
 import math
 import streamlit as st
 from PyPDF2 import PdfReader
-
 from sentence_transformers import SentenceTransformer
 from langchain_community.llms import LlamaCpp
 from langchain.embeddings.base import Embeddings
