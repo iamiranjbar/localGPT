@@ -94,20 +94,30 @@ def add_to_vector_store(db, file_name, chunks):
     db.add_texts(texts=chunks, ids=ids)
     db.persist()
 
+def add_pdf_to_db(db, pdf):
+    pdf_reader = PdfReader(pdf)
+    text = extract_text_from_pdf(pdf_reader)
+    chunks = split_text(text)
+    file_name = pdf.name[:-4]
+    print("============Upload PDF Logs=============")
+    print(f"Befor Upload PDF DB Docs Count: {db._collection.count()}")
+    add_to_vector_store(db, file_name, chunks)
+    print(f"After Upload PDF DB Docs Count: {db._collection.count()}")
+    print(f"{file_name} has been added to database successfully.")
+    print("========================================")
+   
 def upload_pdf(db):
     st.header("Add Documents 💬")
     pdf = st.file_uploader("Upload your PDF", type="pdf")
     if pdf:
-        pdf_reader = PdfReader(pdf)
-        text = extract_text_from_pdf(pdf_reader)
-        chunks = split_text(text)
-        file_name = pdf.name[:-4]
-        print("============Upload PDF Logs=============")
-        print(f"Befor Upload PDF DB Docs Count: {db._collection.count()}")
-        add_to_vector_store(db, file_name, chunks)
-        print(f"After Upload PDF DB Docs Count: {db._collection.count()}")
-        print(f"{file_name} has been added to database successfully.")
-        print("========================================")
+        add_pdf_to_db(db, pdf)
+
+def add_local_docs_to_db(db):
+   for file_name in os.listdir(LOCAL_DOCS_FOLDER):
+    file_path = os.path.join(LOCAL_DOCS_FOLDER, file_name)
+    file_extension = file_name.split(".")[-1]
+    if os.path.isfile(file_path) and file_extension in LOCAL_DOCS_ALLOWED_FORMATS:
+        add_pdf_to_db(db, open(file_path, "rb"))
 
 def initiate_session_state():
   if "chat_history" not in st.session_state:
@@ -204,6 +214,7 @@ def run():
   st.set_page_config(page_title="Local Chatbot", page_icon="🤖")
   st.title("LocalGPT 💬")
   db = create_or_load_db()
+  add_local_docs_to_db(db)
   task_type, llm = render_side_bar()
   upload_pdf(db)
   initiate_session_state()

@@ -8,6 +8,13 @@ MODELS_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/"
 ## For local
 TOKENIZER_PATH = "../tokenizers/local_sbert_model"
 
+# LocalDocs
+## Path for local
+LOCAL_DOCS_FOLDER = "../localDocs/"
+
+## Alowed file types
+LOCAL_DOCS_ALLOWED_FORMATS = ["pdf", "txt"]
+
 N_GPU_LAYERS = 1  # Metal set to 1 is enough.
 N_BATCH = 256  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
 PERSIST_DIRECTORY = "./db"
