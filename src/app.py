@@ -30,7 +30,8 @@ class LocalEmbeddings(Embeddings):
         # Convert a single embedding to a Python list
         embedding = self.model.encode([text], convert_to_tensor=False)
         return embedding[0].tolist()
-        
+
+
 def create_or_load_db():
     embeddings = LocalEmbeddings(model_name=TOKENIZER_PATH)
 
