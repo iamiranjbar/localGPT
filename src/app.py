@@ -10,7 +10,7 @@ from langchain_community.vectorstores import Chroma
 from langchain_core.messages import AIMessage, HumanMessage
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.runnables import RunnablePassthrough
+from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from settings import *
@@ -31,6 +31,20 @@ class LocalEmbeddings(Embeddings):
         embedding = self.model.encode([text], convert_to_tensor=False)
         return embedding[0].tolist()
 
+
+def process_stream(generator):
+    result = {"question": None, "source": None, "answer": ""}
+    
+    for chunk in generator:
+        if "question" in chunk and result["question"] is None:
+            result["question"] = chunk["question"]
+        
+        if "context" in chunk and result["source"] is None:
+            result["source"] = chunk["context"]
+        
+        if "answer" in chunk:
+            result["answer"] += chunk["answer"]
+            yield result
 
 def create_or_load_db():
     embeddings = LocalEmbeddings(model_name=TOKENIZER_PATH)
@@ -92,8 +106,8 @@ def split_text(text):
 
 def add_to_vector_store(db, file_name, chunks):
     ids = [f"{file_name}-{i}" for i in range(len(chunks))]
-    db.add_texts(texts=chunks, ids=ids)
-    db.persist()
+    metadata = [{"source": file_name, "page": i + 1} for i in range(len(chunks))]
+    db.add_texts(texts=chunks, ids=ids, metadatas=metadata)
 
 def add_pdf_to_db(db, pdf):
     pdf_reader = PdfReader(pdf)
@@ -169,7 +183,17 @@ def get_response_from_llm(llm, task_type, user_query, examples, chat_history):
     })
 
 def format_docs(docs):
-    return "\n\n".join(doc.page_content for doc in docs)
+    """
+    Formats the retrieved documents to include page content, PDF name, and page number.
+    """
+    formatted_docs = []
+    for doc in docs:
+        pdf_name = doc.metadata.get("source", "Unknown PDF")
+        page_number = doc.metadata.get("page", "Unknown Page")
+        content = doc.page_content
+        formatted_docs.append(f"**Source:** {pdf_name}, **Page:** {page_number}\n\n{content}")
+
+    return "\n\n".join(formatted_docs)
 
 def ask_question_from_document(llm, question, db, chat_history):
     print("============LLM Response Logs=============")
@@ -178,16 +202,33 @@ def ask_question_from_document(llm, question, db, chat_history):
     retriever=db.as_retriever()
     prompt = ChatPromptTemplate.from_template(RAG_PROMPT_TEMPLATE)
     rag_chain = (
-        {"context": retriever | format_docs, "question": RunnablePassthrough()}
+        RunnablePassthrough.assign(context=(lambda x: format_docs(x["context"])))
         | prompt
         | llm
         | StrOutputParser()
     )
-    response = rag_chain.stream({"question": question, "chat_history": chat_history})
+    rag_chain_with_source = RunnableParallel(
+            {"context": retriever, "question": RunnablePassthrough()}
+        ).assign(answer=rag_chain)
+    response = rag_chain_with_source.stream({"question": question, "chat_history": chat_history})
     end = time.time_ns()
     print(f"LLM Response Time: {(end - start)/1000000000}s")
     print("========================================")
     return response
+
+def format_source(source):
+    source_name = source.metadata.get("source", "Unknown PDF")
+    page_number = source.metadata.get("page", "Unknown Page")
+    content = source.page_content
+    formatted_source = f"Source: {source_name} - Page: {page_number} \n\n {content}"
+    return formatted_source
+
+def get_sources(sources):
+    formatted_sources = []
+    for i in range(SHOWN_SOURCES_COUNT):
+        formatted_source = format_source(sources[i])
+        formatted_sources.append(formatted_source)
+    return "\n\n".join(formatted_sources)
 
 def chat_with_user(llm, task_type, db):
   user_query, examples = render_prompt(task_type)
@@ -200,13 +241,24 @@ def chat_with_user(llm, task_type, db):
     _, scores = find_relative_docs(db, user_query)
     if scores:
         first_doc_score = scores[0]
-    else: first_doc_score = math.inf
+    else: 
+        first_doc_score = math.inf
+
     with st.chat_message("AI"):
       if first_doc_score < MAX_ACCEPTABLE_RELEVANCE_SCORE:
-        print("Answer from localdocs")
-        response = st.write_stream(ask_question_from_document(llm, user_query, db, st.session_state.chat_history))
+        print("=====> Answer from localdocs")
+        response_data = {}
+        answer_placeholder = st.empty()
+        sources_placeholder = st.empty()
+        for partial_answer in process_stream(ask_question_from_document(llm, user_query, db, st.session_state.chat_history)):
+            response_data = partial_answer
+            answer_placeholder.markdown(partial_answer["answer"])
+        formatted_sources = get_sources(response_data["source"])
+        sources_placeholder.text_area("Sources:", value=formatted_sources, height=200)
+        # There is no need to append sources to history since they are already shown just in time
+        response = response_data["answer"]
       else:
-        print("Answer from llm")
+        print("=====> Answer from LLM")
         response = st.write_stream(get_response_from_llm(llm, task_type, user_query, examples, st.session_state.chat_history))
 
     st.session_state.chat_history.append(AIMessage(content=response))
