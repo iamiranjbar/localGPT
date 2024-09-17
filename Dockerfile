@@ -11,6 +11,8 @@ RUN apt update && \
 WORKDIR /app
 # Copy the current directory contents into the container at /app
 COPY . /app
+# Make Persist Directory as environment variable for docker use
+ENV PERSIST_DIRECTORY=/app/db
 # Make sure the install.sh script is executable
 RUN chmod +x /app/install.sh
 # Run the install.sh script to install dependencies

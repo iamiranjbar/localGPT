@@ -1,3 +1,5 @@
+import os
+
 # Models Path
 ## For local
 MODELS_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/"
@@ -7,17 +9,21 @@ MODELS_PATH = "/Users/amirranjbar/Desktop/Military/Code/models/"
 # Tokenizer Path
 ## For local
 TOKENIZER_PATH = "../tokenizers/local_sbert_model"
+## For Docker
+# TOKENIZER_PATH = "/app/tokenizers/local_sbert_model"
 
 # LocalDocs
 ## Path for local
 LOCAL_DOCS_FOLDER = "../localDocs/"
+## For Docker
+# LOCAL_DOCS_FOLDER = "/app/localDocs/"
 
 ## Alowed file types
 LOCAL_DOCS_ALLOWED_FORMATS = ["pdf", "txt"]
 
 N_GPU_LAYERS = 1  # Metal set to 1 is enough.
 N_BATCH = 256  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
-PERSIST_DIRECTORY = "./db"
+PERSIST_DIRECTORY = os.environ.get('PERSIST_DIRECTORY', './db')
 DEFAULT_RELEVANCE_SCORE_THRESHOLD = 1.2
 SHOWN_SOURCES_COUNT = 1
 
