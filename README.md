@@ -1,15 +1,39 @@
 # localGPT
+
 A local chatbot using Langchain and GPT4All libraries
 
-# How to run
-Run the below command:
+## Features
+
+- Local language model execution using LlamaCpp
+- Document embedding and retrieval with Chroma vector store
+- PDF upload and processing
+- Streamlit-based user interface
+- Support for multiple LLM models
+- Task-specific prompts (Base, Creative, Summarization, Few Shot)
+
+## Prerequisites
+
+- Python 3.8+
+- CUDA-compatible GPU (optional, but recommended for better performance)
+
+## Installation
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/localGPT.git
+   cd localGPT
+   ```
+
+2. Install requirements and libraries:
+   ```
+   bash install.sh
+   ```
+
+## Usage
+
+Run the application with:
 
 ` streamlit run src/app.py `
-
-# How to install requirements and libraries
-Run the below command:
-
-` bash install.sh`
 
 # Settings Parameter:
 * n_gpu_layers: 
