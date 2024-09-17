@@ -87,8 +87,19 @@ def render_side_bar():
     chosen_model = st.radio("Choose your model:", models)
     model_path = f"{MODELS_PATH}{chosen_model}"
     llm = initiate_llm(model_path)
+    
+    # Add a slider for the relevance score threshold
+    relevance_threshold = st.slider(
+        "Relevance Score Threshold",
+        min_value=0.0,
+        max_value=2.0,
+        value=DEFAULT_RELEVANCE_SCORE_THRESHOLD,
+        step=0.1,
+        help="Adjust the threshold for using local documents. Lower values will favor local docs more often."
+    )
+    
     render_model_uploader(models)
-    return task_type, llm
+    return task_type, llm, relevance_threshold
 
 def extract_text_from_pdf(pdf_reader):
     text = ""
@@ -230,7 +241,7 @@ def get_sources(sources):
         formatted_sources.append(formatted_source)
     return "\n\n".join(formatted_sources)
 
-def chat_with_user(llm, task_type, db):
+def chat_with_user(llm, task_type, db, relevance_threshold):
   user_query, examples = render_prompt(task_type)
   if user_query is not None and user_query != "":
     st.session_state.chat_history.append(HumanMessage(content=user_query))
@@ -245,8 +256,8 @@ def chat_with_user(llm, task_type, db):
         first_doc_score = math.inf
 
     with st.chat_message("AI"):
-      if first_doc_score < MAX_ACCEPTABLE_RELEVANCE_SCORE:
-        print("=====> Answer from localdocs")
+      if first_doc_score < relevance_threshold:
+        print(f"=====> Answer from localdocs (Score: {first_doc_score}, Threshold: {relevance_threshold})")
         response_data = {}
         answer_placeholder = st.empty()
         sources_placeholder = st.empty()
@@ -258,7 +269,7 @@ def chat_with_user(llm, task_type, db):
         # There is no need to append sources to history since they are already shown just in time
         response = response_data["answer"]
       else:
-        print("=====> Answer from LLM")
+        print(f"=====> Answer from LLM (Score: {first_doc_score}, Threshold: {relevance_threshold})")
         response = st.write_stream(get_response_from_llm(llm, task_type, user_query, examples, st.session_state.chat_history))
 
     st.session_state.chat_history.append(AIMessage(content=response))
@@ -268,11 +279,11 @@ def run():
   st.title("LocalGPT 💬")
   db = create_or_load_db()
   add_local_docs_to_db(db)
-  task_type, llm = render_side_bar()
+  task_type, llm, relevance_threshold = render_side_bar()
   upload_pdf(db)
   initiate_session_state()
   show_previous_chats()
-  chat_with_user(llm, task_type, db)
+  chat_with_user(llm, task_type, db, relevance_threshold)
 
 if __name__ == "__main__":
   run()

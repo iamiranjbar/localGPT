@@ -18,7 +18,7 @@ LOCAL_DOCS_ALLOWED_FORMATS = ["pdf", "txt"]
 N_GPU_LAYERS = 1  # Metal set to 1 is enough.
 N_BATCH = 256  # Should be between 1 and n_ctx, consider the amount of RAM of your Apple Silicon Chip.
 PERSIST_DIRECTORY = "./db"
-MAX_ACCEPTABLE_RELEVANCE_SCORE = 1.2
+DEFAULT_RELEVANCE_SCORE_THRESHOLD = 1.2
 SHOWN_SOURCES_COUNT = 1
 
 TYPE_INFO_TEXT = {
